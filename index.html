@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Return Scanner</title>
+  <meta name="viewport" 
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+
+<h3>Return Barcode Scanner</h3>
+
+<select id="platform">
+  <option>Meesho</option>
+  <option>Flipkart</option>
+  <option>Amazon</option>
+</select>
+
+<select id="partner">
+  <option>Xpressbees</option>
+  <option>Flipkart Logistics</option>
+  <option>Delhivery</option>
+  <option>Shadowfax</option>
+  <option>Amazon</option>
+  <option>Volmo</option>
+</select>
+
+<select id="received">
+  <option>Cloth</option>
+  <option>Missing Items</option>
+</select>
+
+<div id="reader" style="width:300px"></div>
+
+<p id="status"></p>
+
+<script>
+const SCRIPT_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+
+let currentScan = {
+  packet: null,
+  awb: null
+};
+
+function onScanSuccess(text) {
+  if (!currentScan.packet) {
+    currentScan.packet = text;
+    document.getElementById("status").innerText =
+      "Packet Number scanned. Scan AWB.";
+    vibrate();
+    return;
+  }
+
+  if (!currentScan.awb) {
+    currentScan.awb = text;
+    saveData();
+  }
+}
+
+function saveData() {
+  const payload = {
+    platform: platform.value,
+    partner: partner.value,
+    packet: currentScan.packet,
+    awb: currentScan.awb,
+    received: received.value
+  };
+
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === "duplicate") {
+      alert("Duplicate AWB Found!");
+    } else {
+      document.getElementById("status").innerText =
+        "Saved successfully. Scan next packet.";
+    }
+    currentScan = { packet: null, awb: null };
+  });
+}
+
+function vibrate() {
+  if (navigator.vibrate) navigator.vibrate(200);
+}
+
+const scanner = new Html5Qrcode("reader");
+scanner.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  onScanSuccess
+);
+</script>
+
+</body>
+</html>
