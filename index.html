@@ -1,98 +1,185 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Return Scanner</title>
-  <meta name="viewport" 
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8">
+<title>Return Scanner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<style>
+:root {
+  --primary:#2563eb;
+  --success:#16a34a;
+  --danger:#dc2626;
+  --bg:#f4f6f8;
+  --card:#ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  padding: 12px;
+}
+
+/* TOP INPUT */
+.scan-input {
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.08);
+}
+
+.scan-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  padding: 8px;
+}
+
+.icon {
+  color: #555;
+  cursor: pointer;
+}
+
+/* SCANNER */
+#scanner {
+  display: none;
+  margin-top: 12px;
+  height: 220px;
+  border-radius: 12px;
+  background: #000;
+}
+
+/* OPTIONS */
+.options {
+  margin-top: 14px;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.06);
+}
+
+.options select {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+}
+
+/* STATUS BAR */
+.status {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: center;
+  display: none;
+}
+
+.status.success {
+  background: #dcfce7;
+  color: var(--success);
+}
+
+.status.error {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+/* COUNT */
+.counter {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+</style>
 </head>
+
 <body>
 
-<h3>Return Barcode Scanner</h3>
+<!-- TOP INPUT -->
+<div class="scan-input">
+  <span class="material-icons icon">qr_code</span>
+  <input type="text" placeholder="Scan or enter barcode">
+  <span class="material-icons icon" onclick="toggleCamera()">photo_camera</span>
+</div>
 
-<select id="platform">
-  <option>Meesho</option>
-  <option>Flipkart</option>
-  <option>Amazon</option>
-</select>
+<!-- CAMERA -->
+<div id="scanner"></div>
 
-<select id="partner">
-  <option>Xpressbees</option>
-  <option>Flipkart Logistics</option>
-  <option>Delhivery</option>
-  <option>Shadowfax</option>
-  <option>Amazon</option>
-  <option>Volmo</option>
-</select>
+<!-- OPTIONS -->
+<div class="options">
+  <select>
+    <option>Return Platform</option>
+    <option>Meesho</option>
+    <option>Flipkart</option>
+    <option>Amazon</option>
+  </select>
 
-<select id="received">
-  <option>Cloth</option>
-  <option>Missing Items</option>
-</select>
+  <select>
+    <option>Delivery Partner</option>
+    <option>Xpressbees</option>
+    <option>Flipkart Logistics</option>
+    <option>Amazon</option>
+    <option>Delhivery</option>
+    <option>Shadowfax</option>
+    <option>Volmo</option>
+  </select>
 
-<div id="reader" style="width:300px"></div>
+  <select>
+    <option>What We Received</option>
+    <option>Cloth</option>
+    <option>Missing Items</option>
+  </select>
+</div>
 
-<p id="status"></p>
+<!-- STATUS -->
+<div id="status" class="status success">
+  ✔ Scanned Successfully
+</div>
+
+<!-- COUNT -->
+<div class="counter">
+  Total Scanned: <span id="count">0</span>
+</div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYmMlsrGSHwSwoD8lYYAEP1MwPo_X1Il2Fu5zFERhMfhm4iJZVtRzGxr1B_PbhNAA/exec";
+let cameraOpen = false;
+let total = 0;
 
-let currentScan = {
-  packet: null,
-  awb: null
-};
-
-function onScanSuccess(text) {
-  if (!currentScan.packet) {
-    currentScan.packet = text;
-    document.getElementById("status").innerText =
-      "Packet Number scanned. Scan AWB.";
-    vibrate();
-    return;
-  }
-
-  if (!currentScan.awb) {
-    currentScan.awb = text;
-    saveData();
-  }
+function toggleCamera() {
+  cameraOpen = !cameraOpen;
+  document.getElementById("scanner").style.display =
+    cameraOpen ? "block" : "none";
 }
 
-function saveData() {
-  const payload = {
-    platform: platform.value,
-    partner: partner.value,
-    packet: currentScan.packet,
-    awb: currentScan.awb,
-    received: received.value
-  };
-
-  fetch(SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.json())
-  .then(res => {
-    if (res.status === "duplicate") {
-      alert("Duplicate AWB Found!");
-    } else {
-      document.getElementById("status").innerText =
-        "Saved successfully. Scan next packet.";
-    }
-    currentScan = { packet: null, awb: null };
-  });
+/* DEMO ONLY */
+function showSuccess() {
+  total++;
+  document.getElementById("status").className = "status success";
+  document.getElementById("status").innerText = "✔ Scanned Successfully";
+  document.getElementById("status").style.display = "block";
+  document.getElementById("count").innerText = total;
 }
 
-function vibrate() {
-  if (navigator.vibrate) navigator.vibrate(200);
+function showDuplicate() {
+  document.getElementById("status").className = "status error";
+  document.getElementById("status").innerText = "✖ Duplicate Found";
+  document.getElementById("status").style.display = "block";
 }
-
-const scanner = new Html5Qrcode("reader");
-scanner.start(
-  { facingMode: "environment" },
-  { fps: 10, qrbox: 250 },
-  onScanSuccess
-);
 </script>
 
 </body>
