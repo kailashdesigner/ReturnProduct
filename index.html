@@ -148,63 +148,83 @@ body {
 </div>
 
 <script>
-let cameraOpen = false;
-let scanCount = 0;
-let html5QrCode;
-let lastScan = "";
-
-/* Toggle Camera */
-function toggleCamera() {
-  const scannerDiv = document.getElementById("scanner");
-
-  if (!cameraOpen) {
-    scannerDiv.style.display = "block";
-    startScanner();
-  } else {
-    stopScanner();
-    scannerDiv.style.display = "none";
-  }
-
-  cameraOpen = !cameraOpen;
-}
-
-/* Start Scanner */
-function startScanner() {
-  html5QrCode = new Html5Qrcode("scanner");
-
-  html5QrCode.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    onScanSuccess
-  );
-}
-
-/* Stop Scanner */
-function stopScanner() {
-  if (html5QrCode) {
-    html5QrCode.stop().catch(() => {});
-  }
-}
-
-/* Scan Success */
-function onScanSuccess(decodedText) {
-  if (decodedText === lastScan) return; // prevent duplicate rapid scan
-  lastScan = decodedText;
-
-  scanCount++;
-  document.getElementById("count").innerText = scanCount;
-
-  const resultBox = document.getElementById("result");
-  resultBox.style.display = "block";
-  resultBox.innerText = "Scanned: " + decodedText;
-
-  document.getElementById("manualInput").value = decodedText;
-
-  // Pause scanner after one scan
-  stopScanner();
-  cameraOpen = false;
-}
-</script>
+    let cameraOpen = false;
+    let scanCount = 0;
+    let html5QrCode;
+    let lastScan = "";
+    
+    const SCRIPT_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+    
+    /* Toggle Camera */
+    function toggleCamera() {
+      const scannerDiv = document.getElementById("scanner");
+    
+      if (!cameraOpen) {
+        scannerDiv.style.display = "block";
+        startScanner();
+      } else {
+        stopScanner();
+        scannerDiv.style.display = "none";
+      }
+    
+      cameraOpen = !cameraOpen;
+    }
+    
+    /* Start Scanner */
+    function startScanner() {
+      html5QrCode = new Html5Qrcode("scanner");
+    
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        onScanSuccess
+      );
+    }
+    
+    /* Stop Scanner */
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().catch(() => {});
+      }
+    }
+    
+    /* Scan Success */
+    function onScanSuccess(decodedText) {
+      if (decodedText === lastScan) return;
+      lastScan = decodedText;
+    
+      scanCount++;
+      document.getElementById("count").innerText = scanCount;
+      document.getElementById("manualInput").value = decodedText;
+    
+      document.getElementById("result").style.display = "block";
+      document.getElementById("result").innerText =
+        "Scanned & Saved: " + decodedText;
+    
+      sendToSheet(decodedText);
+    
+      stopScanner();
+      cameraOpen = false;
+    }
+    
+    /* Send to Google Sheet */
+    function sendToSheet(code) {
+      const payload = {
+        platform: document.querySelectorAll("select")[0].value,
+        partner: document.querySelectorAll("select")[1].value,
+        received: document.querySelectorAll("select")[2].value,
+        awb: code,          // temporary
+        packet: "",         // temporary
+        sku: ""
+      };
+    
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+    }
+    </script>
+    
 
 </body>
 </html>
