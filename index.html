@@ -8,6 +8,9 @@
 <!-- Icons -->
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
+<!-- Barcode Library -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
 <style>
 :root {
   --primary:#2563eb;
@@ -55,9 +58,8 @@ body {
 #scanner {
   display: none;
   margin-top: 12px;
-  height: 220px;
   border-radius: 12px;
-  background: #000;
+  overflow: hidden;
 }
 
 /* OPTIONS */
@@ -78,24 +80,15 @@ body {
   font-size: 15px;
 }
 
-/* STATUS BAR */
-.status {
+/* RESULT */
+.result {
   margin-top: 14px;
-  padding: 14px;
+  background: var(--card);
   border-radius: 12px;
+  padding: 14px;
   font-weight: 600;
   text-align: center;
   display: none;
-}
-
-.status.success {
-  background: #dcfce7;
-  color: var(--success);
-}
-
-.status.error {
-  background: #fee2e2;
-  color: var(--danger);
 }
 
 /* COUNT */
@@ -113,7 +106,7 @@ body {
 <!-- TOP INPUT -->
 <div class="scan-input">
   <span class="material-icons icon">qr_code</span>
-  <input type="text" placeholder="Scan or enter barcode">
+  <input id="manualInput" type="text" placeholder="Scan or enter barcode">
   <span class="material-icons icon" onclick="toggleCamera()">photo_camera</span>
 </div>
 
@@ -146,39 +139,70 @@ body {
   </select>
 </div>
 
-<!-- STATUS -->
-<div id="status" class="status success">
-  ✔ Scanned Successfully
-</div>
+<!-- SCAN RESULT -->
+<div id="result" class="result"></div>
 
 <!-- COUNT -->
 <div class="counter">
-  Total Scanned: <span id="count">0</span>
+  Total Scans: <span id="count">0</span>
 </div>
 
 <script>
 let cameraOpen = false;
-let total = 0;
+let scanCount = 0;
+let html5QrCode;
+let lastScan = "";
 
+/* Toggle Camera */
 function toggleCamera() {
+  const scannerDiv = document.getElementById("scanner");
+
+  if (!cameraOpen) {
+    scannerDiv.style.display = "block";
+    startScanner();
+  } else {
+    stopScanner();
+    scannerDiv.style.display = "none";
+  }
+
   cameraOpen = !cameraOpen;
-  document.getElementById("scanner").style.display =
-    cameraOpen ? "block" : "none";
 }
 
-/* DEMO ONLY */
-function showSuccess() {
-  total++;
-  document.getElementById("status").className = "status success";
-  document.getElementById("status").innerText = "✔ Scanned Successfully";
-  document.getElementById("status").style.display = "block";
-  document.getElementById("count").innerText = total;
+/* Start Scanner */
+function startScanner() {
+  html5QrCode = new Html5Qrcode("scanner");
+
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    onScanSuccess
+  );
 }
 
-function showDuplicate() {
-  document.getElementById("status").className = "status error";
-  document.getElementById("status").innerText = "✖ Duplicate Found";
-  document.getElementById("status").style.display = "block";
+/* Stop Scanner */
+function stopScanner() {
+  if (html5QrCode) {
+    html5QrCode.stop().catch(() => {});
+  }
+}
+
+/* Scan Success */
+function onScanSuccess(decodedText) {
+  if (decodedText === lastScan) return; // prevent duplicate rapid scan
+  lastScan = decodedText;
+
+  scanCount++;
+  document.getElementById("count").innerText = scanCount;
+
+  const resultBox = document.getElementById("result");
+  resultBox.style.display = "block";
+  resultBox.innerText = "Scanned: " + decodedText;
+
+  document.getElementById("manualInput").value = decodedText;
+
+  // Pause scanner after one scan
+  stopScanner();
+  cameraOpen = false;
 }
 </script>
 
