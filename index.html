@@ -209,23 +209,35 @@ body {
     
     /* Send to Google Sheet */
     function sendToSheet(code) {
-      const payload = {
-        platform: document.querySelectorAll("select")[0].value,
-        partner: document.querySelectorAll("select")[1].value,
-        received: document.querySelectorAll("select")[2].value,
-        awb: code,          // temporary
-        packet: "",         // temporary
-        sku: ""
-      };
-    
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-    }
+  const payload = {
+    platform: document.querySelectorAll("select")[0].value,
+    partner: document.querySelectorAll("select")[1].value,
+    received: document.querySelectorAll("select")[2].value,
+    awb: code,
+    packet: "",
+    sku: ""
+  };
+
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(res => {
+    console.log("Sheet response:", res);
+  })
+  .catch(err => {
+    console.error("Fetch error:", err);
+  });
+}
+
     </script>
     
 
 </body>
 </html>
+
 
